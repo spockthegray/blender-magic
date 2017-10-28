@@ -55,6 +55,7 @@ typedef struct GPUSSAOSettings {
 typedef struct GPULensDistSettings {
 	char type; /* eGPULensDistType */
 	char pad[3];
+	float sample_factor;
 } GPULensDistSettings;
 
 typedef struct GPUFXSettings {

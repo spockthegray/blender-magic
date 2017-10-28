@@ -424,7 +424,12 @@ bool GPU_fx_compositor_initialize_passes(
 		num_passes++;
 
 	if (fx_flag & GPU_FX_FLAG_LensDist)
-		num_passes++;
+	{
+		w *= fx_settings->lensdist->sample_factor;
+		h *= fx_settings->lensdist->sample_factor;
+
+		num_passes++;		
+	}
 
 	if (!fx->gbuffer) {
 		fx->gbuffer = GPU_framebuffer_create();
@@ -604,11 +609,24 @@ bool GPU_fx_compositor_initialize_passes(
 
 	/* enable scissor test. It's needed to ensure sculpting works correctly */
 	if (scissor_rect) {
+
+		int x_sc = scissor_rect->xmin - rect->xmin;
+		int y_sc = scissor_rect->ymin - rect->ymin;
+
 		int w_sc = BLI_rcti_size_x(scissor_rect) + 1;
 		int h_sc = BLI_rcti_size_y(scissor_rect) + 1;
+
+		if (fx_flag & GPU_FX_FLAG_LensDist)
+		{
+			x_sc *= fx_settings->lensdist->sample_factor;
+			y_sc *= fx_settings->lensdist->sample_factor;
+			w_sc *= fx_settings->lensdist->sample_factor;
+			h_sc *= fx_settings->lensdist->sample_factor;
+		}			
+
 		glPushAttrib(GL_SCISSOR_BIT);
 		glEnable(GL_SCISSOR_TEST);
-		glScissor(scissor_rect->xmin - rect->xmin, scissor_rect->ymin - rect->ymin,
+		glScissor(x_sc, y_sc,
 		          w_sc, h_sc);
 		fx->restore_stencil = true;
 	}
@@ -1389,6 +1407,11 @@ void GPU_fx_compositor_init_ssao_settings(GPUSSAOSettings *fx_ssao)
 	fx_ssao->distance_max = 0.2f;
 	fx_ssao->attenuation = 1.0f;
 	fx_ssao->samples = 20;
+}
+
+void GPU_fx_compositor_init_lensdist_settings(GPULensDistSettings *fx_lensdist)
+{
+	fx_lensdist->sample_factor = 1.0;
 }
 
 void GPU_fx_shader_init_interface(struct GPUShader *shader, GPUFXShaderEffect effect)

@@ -2165,6 +2165,19 @@ char *rna_GPUDOF_path(PointerRNA *ptr)
 	return BLI_strdup("");
 }
 
+static void rna_GPUFXLensDistSettings_sample_factor_set(PointerRNA *ptr, const float value)
+{
+	GPULensDistSettings *lensdist = (GPULensDistSettings *)(ptr->data);
+
+	// clamp that bad boy to something reasonable...
+	if (value < 0.25)
+		lensdist->sample_factor = 0.25;
+	else if (value > 4.0)
+		lensdist->sample_factor = 4.0;
+	else
+		lensdist->sample_factor = value;
+}
+
 static void rna_GPUFXSettings_fx_update(Main *UNUSED(bmain), Scene *UNUSED(scene), PointerRNA *ptr)
 {
 	GPUFXSettings *fx_settings = ptr->data;
@@ -5038,10 +5051,18 @@ static void rna_def_gpu_ssao_fx(BlenderRNA *brna)
 static void rna_def_gpu_lens_dist_fx(BlenderRNA *brna)
 {
 	StructRNA *srna;
+	PropertyRNA *prop;	
 
 	srna = RNA_def_struct(brna, "GPULensDistortionSettings", NULL);
+	RNA_def_struct_sdna(srna, "GPULensDistSettings");
 	RNA_def_struct_ui_text(srna, "GPU LENS_DISTORTION", "Settings for GPU based Lens Distortion settings");
 	RNA_def_struct_ui_icon(srna, ICON_RENDERLAYERS);
+
+	prop = RNA_def_property(srna, "sample_factor", PROP_FLOAT, PROP_NONE);
+	RNA_def_property_ui_text(prop, "HMD Sample Factor", "Factor by which offscreen render texture width & height will be scaled for lens distortion shader pass");
+	RNA_def_property_ui_range(prop, 0.25f, 4.0f, 1, 2);
+	RNA_def_property_float_funcs(prop, NULL, "rna_GPUFXLensDistSettings_sample_factor_set", NULL);	
+	RNA_def_property_update(prop, NC_SPACE | ND_SPACE_VIEW3D, NULL);
 }
 
 static void rna_def_gpu_fx(BlenderRNA *brna)
@@ -5068,7 +5089,6 @@ static void rna_def_gpu_fx(BlenderRNA *brna)
 	                         "Use depth of field on viewport using the values from active camera");
 	RNA_def_property_update(prop, NC_SPACE | ND_SPACE_VIEW3D, "rna_GPUFXSettings_fx_update");
 
-
 	prop = RNA_def_property(srna, "ssao", PROP_POINTER, PROP_NONE);
 	RNA_def_property_flag(prop, PROP_NEVER_NULL);
 	RNA_def_property_struct_type(prop, "GPUSSAOSettings");
@@ -5077,6 +5097,18 @@ static void rna_def_gpu_fx(BlenderRNA *brna)
 	prop = RNA_def_property(srna, "use_ssao", PROP_BOOLEAN, PROP_NONE);
 	RNA_def_property_boolean_sdna(prop, NULL, "fx_flag", GPU_FX_FLAG_SSAO);
 	RNA_def_property_ui_text(prop, "SSAO", "Use screen space ambient occlusion of field on viewport");
+	RNA_def_property_update(prop, NC_SPACE | ND_SPACE_VIEW3D, "rna_GPUFXSettings_fx_update");
+
+	prop = RNA_def_property(srna, "lens_distortion", PROP_POINTER, PROP_NONE);
+	RNA_def_property_pointer_sdna(prop, NULL, "lensdist");	
+	RNA_def_property_flag(prop, PROP_NEVER_NULL);
+	RNA_def_property_struct_type(prop, "GPULensDistortionSettings");
+	RNA_def_property_ui_text(prop, "Lens Distortion Settings", "");
+	RNA_def_property_update(prop, NC_SPACE | ND_SPACE_VIEW3D, NULL);
+
+	prop = RNA_def_property(srna, "use_lens_distortion", PROP_BOOLEAN, PROP_NONE);
+	RNA_def_property_boolean_sdna(prop, NULL, "fx_flag", GPU_FX_FLAG_LensDist);
+	RNA_def_property_ui_text(prop, "Lens Distortion", "Use Lens Distortion on Viewport");
 	RNA_def_property_update(prop, NC_SPACE | ND_SPACE_VIEW3D, "rna_GPUFXSettings_fx_update");
 }
 

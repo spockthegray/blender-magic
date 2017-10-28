@@ -231,7 +231,7 @@ static void hmd_view_prepare_screen(wmWindowManager *wm, wmWindow *win, const Re
 	ED_view3d_copy_region_view_data(rv3d_current, rv3d_hmd);
 }
 
-static void hmd_session_prepare_screen(const wmWindowManager *wm, wmWindow *hmd_win)
+static void hmd_session_prepare_screen(const wmWindowManager *wm, wmWindow *hmd_win, const View3D *v3d_current)
 {
 	ScrArea *sa = hmd_win->screen->areabase.first;
 	View3D *v3d = sa->spacedata.first;
@@ -240,8 +240,12 @@ static void hmd_session_prepare_screen(const wmWindowManager *wm, wmWindow *hmd_
 	BLI_assert(ar && sa->spacetype == SPACE_VIEW3D);
 
 	v3d->fx_settings.fx_flag |= GPU_FX_FLAG_LensDist;
+
 	/* Set distortion type for 3D View but first we need to validate fx settings. */
 	BKE_screen_gpu_fx_validate(&v3d->fx_settings);
+
+	// need to update lens distortion settings for HMD window data (using data from main window)...
+	v3d->fx_settings.lensdist->sample_factor = v3d_current->fx_settings.lensdist->sample_factor;
 
 	if (rv3d->persp == RV3D_ORTHO) {
 		rv3d->persp = RV3D_PERSP;
@@ -277,11 +281,11 @@ static void hmd_session_cursor_draw(bContext *C, int mx, int my, void *UNUSED(cu
 	gluDeleteQuadric(qobj);
 }
 
-static void hmd_session_start(wmWindowManager *wm)
+static void hmd_session_start(wmWindowManager *wm, const View3D *v3d_current)
 {
 	wmWindow *hmd_win = wm->hmd_view.hmd_win;
 
-	hmd_session_prepare_screen(wm, hmd_win);
+	hmd_session_prepare_screen(wm, hmd_win, v3d_current);
 	WM_window_fullscreen_toggle(hmd_win, true, false);
 
 	wm->hmd_view.cursor = WM_paint_cursor_activate(wm, NULL, hmd_session_cursor_draw, NULL);
@@ -390,7 +394,12 @@ static int hmd_session_toggle_invoke(bContext *C, wmOperator *UNUSED(op), const 
 		hmd_session_exit(wm, false);
 	}
 	else {
-		hmd_session_start(wm);
+		ARegion *ar_previous;
+		View3D *v3d_current;
+		
+		ED_view3d_context_user_region(C, &v3d_current, &ar_previous);
+
+		hmd_session_start(wm, v3d_current);
 	}
 
 	return OPERATOR_FINISHED;

@@ -3422,22 +3422,34 @@ class VIEW3D_PT_view3d_hmd_view(Panel):
 
         wm = context.window_manager
         view = context.space_data
+        fx_settings = view.fx_settings
+        lens_distortion = fx_settings.lens_distortion
 
-        session_running = wm.is_hmd_session_running
-        text_win = "Close HMD Window" if wm.has_hmd_window else "Open HMD Window"
-        text_run = "Stop Session" if session_running else "Start Session"
-        icon_run = 'PAUSE' if session_running else 'PLAY'
+        layout.prop(view.fx_settings, "use_lens_distortion", text="Enable HMD View")
 
-        row = layout.row(align=True)
-        row.operator("wm.hmd_view_toggle", text=text_win)
-        row.operator("wm.hmd_session_run", text=text_run, icon=icon_run)
-        layout.prop(view, "use_hmd_mirror")
+        if fx_settings.use_lens_distortion:
 
-        layout.separator()
+            layout.label(text="Sample Factor: ")
+            layout.prop(lens_distortion, "sample_factor")
 
-        layout.prop(wm, "hmd_view_shade", text="Shading")
-        layout.prop(wm, "hmd_view_show_only_render")
+            layout.separator()
 
+            row = layout.row()
+
+            session_running = wm.is_hmd_session_running
+            text_win = "Close HMD Window" if wm.has_hmd_window else "Open HMD Window"
+            text_run = "Stop Session" if session_running else "Start Session"
+            icon_run = 'PAUSE' if session_running else 'PLAY'
+
+            row = layout.row(align=True)
+            row.operator("wm.hmd_view_toggle", text=text_win)
+            row.operator("wm.hmd_session_run", text=text_run, icon=icon_run)
+            layout.prop(view, "use_hmd_mirror")
+
+            layout.separator()
+
+            layout.prop(wm, "hmd_view_shade", text="Shading")
+            layout.prop(wm, "hmd_view_show_only_render")
 
 class VIEW3D_PT_view3d_motion_tracking(Panel):
     bl_space_type = 'VIEW_3D'

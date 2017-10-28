@@ -104,7 +104,7 @@ void GPU_fx_compositor_XRay_resolve(GPUFX *fx);
 
 void GPU_fx_compositor_init_dof_settings(struct GPUDOFSettings *dof);
 void GPU_fx_compositor_init_ssao_settings(struct GPUSSAOSettings *ssao);
-
+void GPU_fx_compositor_init_lensdist_settings(struct GPULensDistSettings *lensdist);
 
 /* initialize and cache the shader unform interface for effects */
 void GPU_fx_shader_init_interface(struct GPUShader *shader, GPUFXShaderEffect effect);
